@@ -47,6 +47,7 @@ class ShapingRuleModel(Model):
     corrupt = Text()
     reorder = Text()
     rate = Text()
+    limit = Text()
 
 
 def parse_option():
@@ -56,7 +57,11 @@ def parse_option():
     if {"-d", "--device"}.intersection(set(sys.argv)):
         # deprecated: remain for backward compatibility
         group.add_argument(
-            "-d", "--device", action="append", required=True, help="network device name (e.g. eth0)"
+            "-d",
+            "--device",
+            action="append",
+            required=True,
+            help="network device name (e.g. eth0)",
         )
     else:
         group.add_argument("device", nargs="+", help="network device name (e.g. eth0)")
@@ -106,7 +111,9 @@ def print_tc(text, is_colorize):
     if is_colorize and pygments_installed:
         print(
             highlight(
-                code=text, lexer=JsonLexer(), formatter=TerminalTrueColorFormatter(style="monokai")
+                code=text,
+                lexer=JsonLexer(),
+                formatter=TerminalTrueColorFormatter(style="monokai"),
             )
         )
     else:
@@ -172,7 +179,7 @@ def extract_tc_params(options):
                         export_settings(options.export_path, out_rules, in_rules)
 
                     tc_params.update(rule_parser.get_tc_parameter())
-                    key = "{id} (device={veth})".format(id=container_info.id[:12], veth=veth)
+                    key = f"{container_info.id[:12]} (device={veth})"
                     tc_params[key] = tc_params.pop(veth)
             else:
                 verify_network_interface(device, options.tc_command_output)
@@ -222,7 +229,7 @@ def main():
         )
         return 0
 
-    logger.debug("command history\n{}".format(command_history))
+    logger.debug(f"command history\n{command_history}")
 
     print_tc(json.dumps(tc_params, ensure_ascii=False, indent=4), options.color)
 

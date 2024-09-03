@@ -2,7 +2,6 @@
 .. codeauthor:: Tsuyoshi Hombashi <tsuyoshi.hombashi@gmail.com>
 """
 
-
 import datetime
 import os
 import sys
@@ -28,17 +27,18 @@ def write_tc_script(tcconfig_command, command_history, filename_suffix=None):
                 "# command sequence in this script attempt to simulate the following "
                 "tcconfig command:",
                 "#",
-                "#   {:s}".format(org_tcconfig_cmd),
+                f"#   {org_tcconfig_cmd:s}",
             ]
         )
 
     script_line_list.extend(
         [
             "#",
-            "# the script execution result may different from '{}'".format(org_tcconfig_cmd),
+            f"# the script execution result may different from '{org_tcconfig_cmd}'",
             "#",
             "# created by {:s} on {:s}.".format(
-                tcconfig_command, datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z")
+                tcconfig_command,
+                datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z"),
             ),
             "",
             command_history,
@@ -50,7 +50,7 @@ def write_tc_script(tcconfig_command, command_history, filename_suffix=None):
         fp.write("\n".join(script_line_list) + "\n")
 
     os.chmod(filename, 0o755)
-    logger.info("written a tc script to '{:s}'".format(filename))
+    logger.info(f"written a tc script to '{filename:s}'")
 
 
 def _get_original_tcconfig_command(tcconfig_command):

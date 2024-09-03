@@ -2,7 +2,6 @@
 .. codeauthor:: Tsuyoshi Hombashi <tsuyoshi.hombashi@gmail.com>
 """
 
-
 import itertools
 
 import pingparsing
@@ -57,7 +56,13 @@ class Test_tcset_one_network:
         [[params[0], params[1]] for params in itertools.product(["htb"], [100])],
     )
     def test_dst_net_uniform_latency(
-        self, device_option, dst_host_option, transmitter, pingparser, shaping_algo, delay
+        self,
+        device_option,
+        dst_host_option,
+        transmitter,
+        pingparser,
+        shaping_algo,
+        delay,
     ):
         if device_option is None:
             pytest.skip("device option is null")
@@ -79,8 +84,8 @@ class Test_tcset_one_network:
                     [
                         Tc.Command.TCSET,
                         tc_target,
-                        "--delay {}ms".format(delay),
-                        "--shaping-algo {:s}".format(shaping_algo),
+                        f"--delay {delay}ms",
+                        f"--shaping-algo {shaping_algo:s}",
                     ]
                 )
             )
@@ -98,7 +103,13 @@ class Test_tcset_one_network:
 
     @pytest.mark.parametrize(["delay", "delay_distro"], [[100, 50]])
     def test_dst_net_latency_distro(
-        self, device_option, dst_host_option, transmitter, pingparser, delay, delay_distro
+        self,
+        device_option,
+        dst_host_option,
+        transmitter,
+        pingparser,
+        delay,
+        delay_distro,
     ):
         if typepy.is_null_string(dst_host_option):
             pytest.skip("destination host is null")
@@ -121,9 +132,9 @@ class Test_tcset_one_network:
                         Tc.Command.TCSET,
                         tc_target,
                         "--delay",
-                        "{:d}ms".format(delay),
+                        f"{delay:d}ms",
                         "--delay-distro",
-                        "{:d}ms".format(delay_distro),
+                        f"{delay_distro:d}ms",
                     ]
                 )
             )
@@ -191,9 +202,7 @@ class Test_tcset_one_network:
             without_tc_loss_rate = pingparser.parse(ping_result).packet_loss_rate
 
             # w/ traffic shaping ---
-            runner_helper(
-                " ".join([Tc.Command.TCSET, tc_target, "{:s} {:f}".format(option, value)])
-            )
+            runner_helper(" ".join([Tc.Command.TCSET, tc_target, f"{option:s} {value:f}"]))
 
             ping_result = transmitter.ping()
             assert ping_result.returncode == 0
@@ -223,7 +232,7 @@ class Test_tcset_one_network:
             without_tc_duplicate_rate = pingparser.parse(ping_result).packet_duplicate_rate
 
             # w/ packet duplicate tc ---
-            runner_helper(" ".join([Tc.Command.TCSET, tc_target, "{:s} {}".format(option, value)]))
+            runner_helper(" ".join([Tc.Command.TCSET, tc_target, f"{option:s} {value}"]))
 
             ping_result = transmitter.ping()
             assert ping_result.returncode == 0
@@ -251,7 +260,7 @@ class Test_tcset_one_network:
             transmitter.destination = dst_host_option
 
             # w/ latency tc ---
-            runner_helper([Tc.Command.TCSET, tc_target, "--delay", "{:d}ms".format(delay)])
+            runner_helper([Tc.Command.TCSET, tc_target, "--delay", f"{delay:d}ms"])
 
             ping_result = transmitter.ping()
             assert ping_result.returncode == 0
@@ -266,7 +275,7 @@ class Test_tcset_one_network:
                         "--exclude-dst-network {:s}/24".format(
                             ".".join(dst_host_option.split(".")[:3] + ["0"])
                         ),
-                        "--delay {:d}ms".format(delay),
+                        f"--delay {delay:d}ms",
                         "--overwrite",
                     ]
                 )

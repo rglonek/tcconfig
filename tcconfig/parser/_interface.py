@@ -8,7 +8,7 @@ import abc
 class ParserInterface(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def parse(self, device, text):  # pragma: no cover
-        pass
+        ...
 
 
 class AbstractParser(ParserInterface, metaclass=abc.ABCMeta):
@@ -20,13 +20,14 @@ class AbstractParser(ParserInterface, metaclass=abc.ABCMeta):
     def con(self):
         return self._con
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def _tc_subcommand(self):  # pragma: no cover
-        pass
+        ...
 
     @abc.abstractmethod
     def _clear(self):  # pragma: no cover
-        pass
+        ...
 
     @staticmethod
     def _to_unicode(text):

@@ -2,7 +2,6 @@
 .. codeauthor:: Tsuyoshi Hombashi <tsuyoshi.hombashi@gmail.com>
 """
 
-
 import typepy
 from humanreadable import ParameterError
 from subprocrunner import SubprocessRunner
@@ -14,7 +13,6 @@ from ._interface import AbstractShaper
 
 
 class TbfShaper(AbstractShaper):
-
     __NETEM_QDISC_MAJOR_ID_OFFSET = 10
 
     __MIN_BUFFER_BYTE = 1600
@@ -34,7 +32,9 @@ class TbfShaper(AbstractShaper):
             return self.__IN_DEVICE_QDISC_MINOR_ID
 
         raise ParameterError(
-            "unknown direction", expected=TrafficDirection.LIST, value=self._tc_obj.direction
+            "unknown direction",
+            expected=TrafficDirection.LIST,
+            value=self._tc_obj.direction,
         )
 
     def _get_netem_qdisc_major_id(self, base_id):
@@ -47,10 +47,10 @@ class TbfShaper(AbstractShaper):
 
     def _make_qdisc(self):
         base_command = self._tc_obj.get_tc_command(TcSubCommand.QDISC)
-        handle = "{:s}:".format(self._tc_obj.qdisc_major_id_str)
+        handle = f"{self._tc_obj.qdisc_major_id_str:s}:"
 
         return run_command_helper(
-            " ".join([base_command, self._dev, "root", "handle {:s}".format(handle), "prio"]),
+            " ".join([base_command, self._dev, "root", f"handle {handle:s}", "prio"]),
             ignore_error_msg_regexp=self._tc_obj.REGEXP_FILE_EXISTS,
             notice_msg=self._tc_obj.EXISTS_MSG_TEMPLATE.format(
                 "failed to '{command:s}': prio qdisc already exists "
@@ -67,13 +67,14 @@ class TbfShaper(AbstractShaper):
         try:
             self._tc_obj.netem_param.validate_bandwidth_rate()
         except ParameterError:
-            return 0
+            return
 
         base_command = self._tc_obj.get_tc_command(TcSubCommand.QDISC)
         parent = "{:x}:{:d}".format(
-            self._get_netem_qdisc_major_id(self._tc_obj.qdisc_major_id), self._get_qdisc_minor_id()
+            self._get_netem_qdisc_major_id(self._tc_obj.qdisc_major_id),
+            self._get_qdisc_minor_id(),
         )
-        handle = "{:d}:".format(20)
+        handle = f"{20:d}:"
         upper_limit_rate = get_upper_limit_rate(self._tc_device)
 
         bandwidth = self._tc_obj.netem_param.bandwidth_rate
@@ -84,10 +85,10 @@ class TbfShaper(AbstractShaper):
             [
                 base_command,
                 self._dev,
-                "parent {:s}".format(parent),
-                "handle {:s}".format(handle),
+                f"parent {parent:s}",
+                f"handle {handle:s}",
                 self.algorithm_name,
-                "rate {}kbit".format(bandwidth.kilo_bps),
+                f"rate {bandwidth.kilo_bps}kbit",
                 "buffer {:d}".format(
                     max(int(bandwidth.kilo_bps), self.__MIN_BUFFER_BYTE)
                 ),  # [byte]
@@ -137,23 +138,23 @@ class TbfShaper(AbstractShaper):
                 not typepy.Integer(self._tc_obj.dst_port).is_type(),
             ]
         ):
-            flowid = "{:s}:{:d}".format(self._tc_obj.qdisc_major_id_str, self._get_qdisc_minor_id())
+            flowid = f"{self._tc_obj.qdisc_major_id_str:s}:{self._get_qdisc_minor_id():d}"
         else:
-            flowid = "{:s}:2".format(self._tc_obj.qdisc_major_id_str)
+            flowid = f"{self._tc_obj.qdisc_major_id_str:s}:2"
 
         return SubprocessRunner(
             " ".join(
                 [
                     self._tc_obj.get_tc_command(TcSubCommand.FILTER),
                     self._dev,
-                    "protocol {:s}".format(self._tc_obj.protocol),
-                    "parent {:s}:".format(self._tc_obj.qdisc_major_id_str),
+                    f"protocol {self._tc_obj.protocol:s}",
+                    f"parent {self._tc_obj.qdisc_major_id_str:s}:",
                     "prio 2 u32 match {:s} {:s} {:s}".format(
                         self._tc_obj.protocol,
                         self._get_network_direction_str(),
                         get_anywhere_network(self._tc_obj.ip_version),
                     ),
-                    "flowid {:s}".format(flowid),
+                    f"flowid {flowid:s}",
                 ]
             )
         ).run()

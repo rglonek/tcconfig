@@ -2,7 +2,6 @@
 .. codeauthor:: Tsuyoshi Hombashi <tsuyoshi.hombashi@gmail.com>
 """
 
-
 import humanreadable as hr
 import typepy
 from pyroute2 import IPRoute
@@ -20,7 +19,7 @@ def get_anywhere_network(ip_version):
     if ip_version_n == 6:
         return Network.Ipv6.ANYWHERE
 
-    raise ValueError("unknown ip version: {}".format(ip_version))
+    raise ValueError(f"unknown ip version: {ip_version}")
 
 
 def _get_iproute2_upper_limite_rate():
@@ -33,11 +32,11 @@ def _get_iproute2_upper_limite_rate():
     # bits per second older than 3.14.0
     # http://git.kernel.org/cgit/linux/kernel/git/shemminger/iproute2.git/commit/?id=8334bb325d5178483a3063c5f06858b46d993dc7
 
-    return hr.BitPerSecond("32Gbps")
+    return hr.BitsPerSecond("32Gbps")
 
 
 def _read_iface_speed(tc_device):
-    with open("/sys/class/net/{:s}/speed".format(tc_device)) as f:
+    with open(f"/sys/class/net/{tc_device:s}/speed") as f:
         return int(f.read().strip())
 
 
@@ -51,11 +50,14 @@ def get_upper_limit_rate(tc_device):
         return _get_iproute2_upper_limite_rate()
 
     if speed_value < 0:
-        # default to the iproute2 upper limit when speed value is -1 in
+        # default to the iproute2 upper limit when the speed value is -1 in
         # paravirtualized network interfaces
         return _get_iproute2_upper_limite_rate()
 
-    return min(hr.BitPerSecond("{}Mbps".format(speed_value)), _get_iproute2_upper_limite_rate())
+    return min(
+        hr.BitsPerSecond(f"{speed_value}Mbps"),
+        _get_iproute2_upper_limite_rate(),
+    )
 
 
 def is_anywhere_network(network, ip_version):
@@ -70,7 +72,7 @@ def is_anywhere_network(network, ip_version):
     if ip_version == 6:
         return network in (get_anywhere_network(ip_version), "0:0:0:0:0:0:0:0/0")
 
-    raise ValueError("invalid ip version: {}".format(ip_version))
+    raise ValueError(f"invalid ip version: {ip_version}")
 
 
 def sanitize_network(network, ip_version):
@@ -103,7 +105,7 @@ def sanitize_network(network, ip_version):
     if ip_version == 6:
         return ipaddress.IPv6Network(str(network)).compressed
 
-    raise ValueError("unexpected ip version: {}".format(ip_version))
+    raise ValueError(f"unexpected ip version: {ip_version}")
 
 
 def verify_network_interface(device, tc_command_output):

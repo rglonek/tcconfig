@@ -17,23 +17,24 @@ from .._shaping_rule_finder import TcShapingRuleFinder
 
 
 class ShaperInterface(metaclass=abc.ABCMeta):
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def algorithm_name(self):  # pragma: no cover
-        pass
+        ...
 
     @abc.abstractmethod
     def set_shaping(self):  # pragma: no cover
-        pass
+        ...
 
 
 class AbstractShaper(ShaperInterface):
     @property
     def _tc_device(self):
-        return "{:s}".format(self._tc_obj.get_tc_device())
+        return f"{self._tc_obj.get_tc_device():s}"
 
     @property
     def _dev(self):
-        return "dev {:s}".format(self._tc_device)
+        return f"dev {self._tc_device:s}"
 
     @property
     def _existing_parent(self):
@@ -62,17 +63,17 @@ class AbstractShaper(ShaperInterface):
     def _set_netem(self):
         base_command = self._tc_obj.get_tc_command(TcSubCommand.QDISC)
         parent = self._get_tc_parent(
-            "{:s}:{:d}".format(self._tc_obj.qdisc_major_id_str, self._get_qdisc_minor_id())
+            f"{self._tc_obj.qdisc_major_id_str:s}:{self._get_qdisc_minor_id():d}"
         )
         handle = self._get_tc_handle(
-            "{:x}:".format(self._get_netem_qdisc_major_id(self._tc_obj.qdisc_major_id))
+            f"{self._get_netem_qdisc_major_id(self._tc_obj.qdisc_major_id):x}:"
         )
 
         command_item_list = [
             base_command,
-            "dev {:s}".format(self._tc_obj.get_tc_device()),
-            "parent {:s}".format(parent),
-            "handle {:s}".format(handle),
+            f"dev {self._tc_obj.get_tc_device():s}",
+            f"parent {parent:s}",
+            f"handle {handle:s}",
             self._tc_obj.netem_param.make_netem_command_parts(),
         ]
 
@@ -110,13 +111,13 @@ class AbstractShaper(ShaperInterface):
         command_item_list = [
             self._tc_obj.get_tc_command(TcSubCommand.FILTER),
             self._dev,
-            "protocol {:s}".format(self._tc_obj.protocol),
-            "parent {:s}:".format(self._tc_obj.qdisc_major_id_str),
-            "prio {:d}".format(self._get_filter_prio(is_exclude_filter=False)),
+            f"protocol {self._tc_obj.protocol:s}",
+            f"parent {self._tc_obj.qdisc_major_id_str:s}:",
+            f"prio {self._get_filter_prio(is_exclude_filter=False):d}",
         ]
 
         if self._is_use_iptables():
-            command_item_list.append("handle {:d} fw".format(self._get_unique_mangle_mark_id()))
+            command_item_list.append(f"handle {self._get_unique_mangle_mark_id():d} fw")
         else:
             if typepy.is_null_string(self._tc_obj.dst_network):
                 dst_network = get_anywhere_network(self._tc_obj.ip_version)
@@ -152,7 +153,7 @@ class AbstractShaper(ShaperInterface):
                 )
 
         command_item_list.append(
-            "flowid {:s}:{:d}".format(self._tc_obj.qdisc_major_id_str, self._get_qdisc_minor_id())
+            f"flowid {self._tc_obj.qdisc_major_id_str:s}:{self._get_qdisc_minor_id():d}"
         )
 
         return subprocrunner.SubprocessRunner(" ".join(command_item_list)).run()
@@ -162,16 +163,19 @@ class AbstractShaper(ShaperInterface):
 
     def _is_use_iptables(self):
         return all(
-            [self._tc_obj.is_enable_iptables, self._tc_obj.direction == TrafficDirection.OUTGOING]
+            [
+                self._tc_obj.is_enable_iptables,
+                self._tc_obj.direction == TrafficDirection.OUTGOING,
+            ]
         )
 
     @abc.abstractmethod
     def _get_qdisc_minor_id(self):  # pragma: no cover
-        pass
+        ...
 
     @abc.abstractmethod
     def _get_netem_qdisc_major_id(self, base_id):  # pragma: no cover
-        pass
+        ...
 
     def _get_network_direction_str(self):
         if self._tc_obj.direction == TrafficDirection.OUTGOING:
@@ -181,7 +185,9 @@ class AbstractShaper(ShaperInterface):
             return "src"
 
         raise ParameterError(
-            "unknown direction", expected=TrafficDirection.LIST, value=self._tc_obj.direction
+            "unknown direction",
+            expected=TrafficDirection.LIST,
+            value=self._tc_obj.direction,
         )
 
     def _get_tc_handle(self, default_handle):
@@ -213,11 +219,11 @@ class AbstractShaper(ShaperInterface):
 
     @abc.abstractmethod
     def _make_qdisc(self):  # pragma: no cover
-        pass
+        ...
 
     @abc.abstractmethod
     def _add_rate(self):  # pragma: no cover
-        pass
+        ...
 
     def __add_mangle_mark(self, mark_id):
         dst_network = None

@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - ".gitignore"
+      - "README.rst"
+  pull_request:
+    paths-ignore:
+      - ".gitignore"
+      - "README.rst"
+
+permissions:
+  contents: read
+
+jobs:
+  build-wheel-package:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.event_name }}-${{ github.workflow }}-${{ github.ref_name }}-build
+      cancel-in-progress: true
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            setup.py
+            **/*requirements.txt
+            tox.ini
+
+      - run: make setup-ci
+
+      - run: make build
+
+  lint:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.event_name }}-${{ github.workflow }}-${{ github.ref_name }}-lint
+      cancel-in-progress: true
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            setup.py
+            **/*requirements.txt
+            tox.ini
+
+      - run: make setup-ci
+
+      - run: make check
+
+  unit-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
+        os: [ubuntu-latest]
+    concurrency:
+      group: ${{ github.event_name }}-${{ github.workflow }}-unit-test-${{ matrix.os }}-${{ matrix.python-version }}
+      cancel-in-progress: true
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            setup.py
+            **/*requirements.txt
+            tox.ini
+
+      - run: make setup-ci
+
+      - name: Run tests
+        run: make test
+        env:
+          PYTEST_DISCORD_WEBHOOK: ${{ secrets.PYTEST_DISCORD_WEBHOOK }}
+
+  test-installer:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
+    concurrency:
+      group: ${{ github.event_name }}-${{ github.workflow }}-installer-${{ matrix.os }}
+      cancel-in-progress: true
+    timeout-minutes: 20
+
+    steps:
+      - run: curl -sSL https://raw.githubusercontent.com/thombashi/tcconfig/master/scripts/installer.sh | sudo bash -x

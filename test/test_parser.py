@@ -2,7 +2,6 @@
 .. codeauthor:: Tsuyoshi Hombashi <tsuyoshi.hombashi@gmail.com>
 """
 
-
 import pytest
 from simplesqlite import connect_memdb
 
@@ -45,11 +44,12 @@ def six_b(s):
 
 class Test_TcFilterParser_parse_filter_ipv4:
     @pytest.mark.parametrize(
-        ["value", "expected"],
+        ["test_id", "value", "expected"],
         [
-            [None, []],
-            ["", []],
+            [1, None, []],
+            [2, "", []],
             [
+                3,
                 six_b(
                     """filter parent 1: protocol ip pref 1 u32
 filter parent 1: protocol ip pref 1 u32 fh 801: ht divisor 1
@@ -90,6 +90,7 @@ filter parent 1: protocol ip pref 2 u32 fh 800::800 order 2048 key ht 800 bkt 0 
                 ],
             ],
             [
+                4,
                 six_b(
                     """filter parent 1: protocol ip pref 1 u32
 filter parent 1: protocol ip pref 1 u32 fh 801: ht divisor 1
@@ -132,6 +133,7 @@ filter parent 1: protocol ip pref 2 u32 fh 800::800 order 2048 key ht 800 bkt 0 
                 ],
             ],
             [
+                5,
                 six_b(
                     """filter parent 1: protocol ip pref 1 u32
 filter parent 1: protocol ip pref 1 u32 fh 801: ht divisor 1
@@ -173,6 +175,7 @@ filter parent 1: protocol ip pref 2 u32 fh 800::800 order 2048 key ht 800 bkt 0 
                 ],
             ],
             [
+                6,
                 six_b(
                     """filter parent 1a1a: protocol ip pref 1 u32
 filter parent 1a1a: protocol ip pref 1 u32 fh 800: ht divisor 1
@@ -197,6 +200,7 @@ filter parent 1a1a: protocol ip pref 1 u32 fh 800::800 order 2048 key ht 800 bkt
                 ],
             ],
             [
+                7,
                 six_b(
                     """filter parent 1f1c: protocol ip pref 1 fw
 filter parent 1f1c: protocol ip pref 1 fw handle 0x65 classid 1f1c:1"""
@@ -204,6 +208,41 @@ filter parent 1f1c: protocol ip pref 1 fw handle 0x65 classid 1f1c:1"""
                 [Filter(**{Tc.Param.DEVICE: DEVICE, "classid": "1f1c:1", "handle": 101})],
             ],
             [
+                8,
+                six_b(
+                    """filter parent 120a: protocol ip pref 1 u32 chain 0 
+filter parent 120a: protocol ip pref 1 u32 chain 0 fh 800: ht divisor 1 
+filter parent 120a: protocol ip pref 1 u32 chain 0 fh 800::800 order 2048 key ht 800 bkt 0 flowid 120a:1 not_in_hw 
+  match 01020300/ffffff00 at 16
+filter parent 120a: protocol ip pref 5 u32 chain 0 
+filter parent 120a: protocol ip pref 5 u32 chain 0 fh 801: ht divisor 1 
+filter parent 120a: protocol ip pref 5 u32 chain 0 fh 801::800 order 2048 key ht 801 bkt 0 flowid 120a:2 not_in_hw 
+  match 00000000/00000000 at 16
+  match 00000000/00000000 at 12"""
+                ),
+                [
+                    Filter(
+                        device="eth0",
+                        filter_id="800::800",
+                        flowid="120a:1",
+                        protocol="ip",
+                        priority=1,
+                        src_network="0.0.0.0/0",
+                        dst_network="1.2.3.0/24",
+                    ),
+                    Filter(
+                        device="eth0",
+                        filter_id="801::800",
+                        flowid="120a:2",
+                        protocol="ip",
+                        priority=5,
+                        src_network="0.0.0.0/0",
+                        dst_network="0.0.0.0/0",
+                    ),
+                ],
+            ],
+            [
+                9,
                 six_b(
                     """filter parent 120a: protocol ip pref 5 u32 chain 0
 filter parent 120a: protocol ip pref 5 u32 chain 0 fh 800: ht divisor 1
@@ -244,23 +283,25 @@ filter parent 120a: protocol ipv6 pref 6 u32 chain 0 fh 801::800 order 2048 key 
                 ],
             ],
         ],
+        ids=lambda i: f"Test_TcFilterParser_parse_filter_ipv4_{i}",
     )
-    def test_normal(self, filter_parser_ipv4, value, expected):
+    def test_normal(self, test_id, filter_parser_ipv4, value, expected):
         Filter.attach(filter_parser_ipv4.con)
         Filter.create()
         filter_parser_ipv4.parse(DEVICE, value)
         actual = [f for f in Filter().select()]
 
-        assert actual == expected
+        assert actual == expected, test_id
 
 
 class Test_TcFilterParser_parse_filter_ipv6:
     @pytest.mark.parametrize(
-        ["value", "expected"],
+        ["test_id", "value", "expected"],
         [
-            [None, []],
-            ["", []],
+            [1, None, []],
+            [2, "", []],
             [
+                3,
                 six_b(
                     """filter parent 1f87: protocol ipv6 pref 1 u32
 filter parent 1f87: protocol ipv6 pref 1 u32 fh 800: ht divisor 1
@@ -287,6 +328,7 @@ filter parent 1f87: protocol ipv6 pref 1 u32 fh 800::800 order 2048 key ht 800 b
                 ],
             ],
             [
+                4,
                 six_b(
                     """filter parent 1f87: protocol ipv6 pref 1 u32
 filter parent 1f87: protocol ipv6 pref 1 u32 fh 800: ht divisor 1
@@ -313,6 +355,7 @@ filter parent 1f87: protocol ipv6 pref 1 u32 fh 800::800 order 2048 key ht 800 b
                 ],
             ],
             [
+                5,
                 six_b(
                     """filter parent 1f87: protocol ipv6 pref 1 u32
 filter parent 1f87: protocol ipv6 pref 1 u32 fh 800: ht divisor 1
@@ -369,6 +412,7 @@ filter parent 1f87: protocol ipv6 pref 1 u32 fh 800::802 order 2050 key ht 800 b
                 ],
             ],
             [
+                6,
                 six_b(
                     """filter parent 1f87: protocol ipv6 pref 1 u32
 filter parent 1f87: protocol ipv6 pref 1 u32 fh 800: ht divisor 1
@@ -392,13 +436,15 @@ filter parent 1f87: protocol ipv6 pref 1 u32 fh 800::802 order 2050 key ht 800 b
                 ],
             ],
         ],
+        ids=lambda i: f"Test_TcFilterParser_parse_filter_ipv6_{i}",
     )
-    def test_normal(self, filter_parser_ipv6, value, expected):
+    def test_normal(self, test_id, filter_parser_ipv6, value, expected):
         Filter.attach(filter_parser_ipv6.con)
         Filter.create()
         filter_parser_ipv6.parse(DEVICE, value)
         actual = [f for f in Filter().select()]
 
+        print(f"test_id={test_id}\n     got={actual}\nexpected={expected}")
         assert actual == expected
 
 
@@ -455,6 +501,7 @@ qdisc netem 2007: parent 1f87:2 limit 1000 delay 1.0ms loss 0.01%
                             Tc.Param.HANDLE: "2007:",
                             Tc.Param.PARENT: "1f87:2",
                             "direct_qlen": 1000,
+                            "limit": 1000,
                         }
                     )
                 ],
@@ -472,6 +519,7 @@ qdisc netem 1a9a: parent 1a1a:2 limit 1000
                             Tc.Param.HANDLE: "1a9a:",
                             Tc.Param.PARENT: "1a1a:2",
                             "direct_qlen": 1000,
+                            "limit": 1000,
                         }
                     )
                 ],
@@ -492,6 +540,7 @@ qdisc netem 2008: parent 1f87:3 limit 1000 delay 50.0ms  1.0ms loss 5%
                             Tc.Param.HANDLE: "2007:",
                             Tc.Param.PARENT: "1f87:2",
                             "direct_qlen": 1000,
+                            "limit": 1000,
                         }
                     ),
                     Qdisc(
@@ -502,6 +551,7 @@ qdisc netem 2008: parent 1f87:3 limit 1000 delay 50.0ms  1.0ms loss 5%
                             "delay-distro": "1.0ms",
                             Tc.Param.HANDLE: "2008:",
                             Tc.Param.PARENT: "1f87:3",
+                            "limit": 1000,
                         }
                     ),
                 ],
@@ -522,6 +572,7 @@ qdisc netem 2008: parent 1f87:3 limit 1000 delay 0.5s  1.0ms loss 5%
                             Tc.Param.HANDLE: "2007:",
                             Tc.Param.PARENT: "1f87:2",
                             "direct_qlen": 1000,
+                            "limit": 1000,
                         }
                     ),
                     Qdisc(
@@ -532,11 +583,13 @@ qdisc netem 2008: parent 1f87:3 limit 1000 delay 0.5s  1.0ms loss 5%
                             "delay-distro": "1.0ms",
                             Tc.Param.HANDLE: "2008:",
                             Tc.Param.PARENT: "1f87:3",
+                            "limit": 1000,
                         }
                     ),
                 ],
             ],
         ],
+        ids=lambda i: f"Test_TcQdiscParser_parse_{i}",
     )
     def test_normal(self, qdisc_parser, value, expected):
         Qdisc.attach(qdisc_parser.con)

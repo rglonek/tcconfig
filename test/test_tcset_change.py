@@ -2,7 +2,6 @@
 .. codeauthor:: Tsuyoshi Hombashi <tsuyoshi.hombashi@gmail.com>
 """
 
-
 import json
 
 import pytest
@@ -35,7 +34,7 @@ class Test_tcset_change:
         if device_value is None:
             pytest.skip("device is null")
 
-        for device_option in [device_value, "--device {}".format(device_value)]:
+        for device_option in [device_value, f"--device {device_value}"]:
             delete_all_rules(device_option)
 
             runner_helper(
@@ -63,7 +62,7 @@ class Test_tcset_change:
         if device_value is None:
             pytest.skip("device is null")
 
-        for device_option in [device_value, "--device {}".format(device_value)]:
+        for device_option in [device_value, f"--device {device_value}"]:
             runner_helper(
                 " ".join(
                     [
@@ -90,10 +89,10 @@ class Test_tcset_change:
                 )
             )
 
-            runner = SubprocessRunner("{:s} {:s}".format(Tc.Command.TCSHOW, device_option))
+            runner = SubprocessRunner(f"{Tc.Command.TCSHOW:s} {device_option:s}")
             expected = (
                 "{"
-                + '"{:s}"'.format(device_value)
+                + f'"{device_value:s}"'
                 + ": {"
                 + """
                         "outgoing": {
@@ -118,6 +117,7 @@ class Test_tcset_change:
             )
             runner.run()
             print_test_result(expected=expected, actual=runner.stdout, error=runner.stderr)
+            assert runner.stdout
             assert json.loads(runner.stdout) == json.loads(expected)
 
             runner_helper(
@@ -137,10 +137,10 @@ class Test_tcset_change:
                 )
             )
 
-            runner = SubprocessRunner("{:s} {:s}".format(Tc.Command.TCSHOW, device_option))
+            runner = SubprocessRunner(f"{Tc.Command.TCSHOW:s} {device_option:s}")
             expected = (
                 "{"
-                + '"{:s}"'.format(device_value)
+                + f'"{device_value:s}"'
                 + ": {"
                 + """
                         "outgoing": {
@@ -165,6 +165,7 @@ class Test_tcset_change:
             )
             runner.run()
             print_test_result(expected=expected, actual=runner.stdout, error=runner.stderr)
+            assert runner.stdout
             assert json.loads(runner.stdout) == json.loads(expected)
 
             # finalize ---

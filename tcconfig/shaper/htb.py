@@ -2,7 +2,6 @@
 .. codeauthor:: Tsuyoshi Hombashi <tsuyoshi.hombashi@gmail.com>
 """
 
-
 import errno
 import re
 from typing import List
@@ -40,7 +39,7 @@ class HtbShaper(AbstractShaper):
     def _get_qdisc_minor_id(self):
         if self.__qdisc_minor_id is None:
             self.__qdisc_minor_id = self.__get_unique_qdisc_minor_id()
-            logger.debug("__get_unique_qdisc_minor_id: {:d}".format(self.__qdisc_minor_id))
+            logger.debug(f"__get_unique_qdisc_minor_id: {self.__qdisc_minor_id:d}")
 
         return self.__qdisc_minor_id
 
@@ -55,7 +54,7 @@ class HtbShaper(AbstractShaper):
             return 0
 
         base_command = self._tc_obj.get_tc_command(TcSubCommand.QDISC)
-        handle = "{:s}:".format(self._tc_obj.qdisc_major_id_str)
+        handle = f"{self._tc_obj.qdisc_major_id_str:s}:"
 
         if self._tc_obj.is_add_shaping_rule:
             message = None
@@ -76,9 +75,9 @@ class HtbShaper(AbstractShaper):
                     base_command,
                     self._dev,
                     "root",
-                    "handle {:s}".format(handle),
+                    f"handle {handle:s}",
                     self.algorithm_name,
-                    "default {:d}".format(self.__DEFAULT_CLASS_MINOR_ID),
+                    f"default {self.__DEFAULT_CLASS_MINOR_ID:d}",
                 ]
             ),
             ignore_error_msg_regexp=self._tc_obj.REGEXP_FILE_EXISTS,
@@ -91,10 +90,10 @@ class HtbShaper(AbstractShaper):
     def _add_rate(self):
         base_command = self._tc_obj.get_tc_command(TcSubCommand.CLASS)
         parent = "{:s}:".format(
-            self._get_tc_parent("{:s}:".format(self._tc_obj.qdisc_major_id_str)).split(":")[0]
+            self._get_tc_parent(f"{self._tc_obj.qdisc_major_id_str:s}:").split(":")[0]
         )
         classid = self._get_tc_parent(
-            "{:s}:{:d}".format(self._tc_obj.qdisc_major_id_str, self._get_qdisc_minor_id())
+            f"{self._tc_obj.qdisc_major_id_str:s}:{self._get_qdisc_minor_id():d}"
         )
         upper_limit_rate = get_upper_limit_rate(self._tc_device)
 
@@ -105,18 +104,18 @@ class HtbShaper(AbstractShaper):
         command_item_list = [
             base_command,
             self._dev,
-            "parent {:s}".format(parent),
-            "classid {:s}".format(classid),
+            f"parent {parent:s}",
+            f"classid {classid:s}",
             self.algorithm_name,
-            "rate {}Kbit".format(bandwidth.kilo_bps),
-            "ceil {}Kbit".format(bandwidth.kilo_bps),
+            f"rate {bandwidth.kilo_bps}Kbit",
+            f"ceil {bandwidth.kilo_bps}Kbit",
         ]
 
         if bandwidth != upper_limit_rate:
             command_item_list.extend(
                 [
-                    "burst {}KB".format(bandwidth.kilo_byte_per_sec),
-                    "cburst {}KB".format(bandwidth.kilo_byte_per_sec),
+                    f"burst {bandwidth.kilo_byte_per_sec}KB",
+                    f"cburst {bandwidth.kilo_byte_per_sec}KB",
                 ]
             )
 
@@ -157,9 +156,9 @@ class HtbShaper(AbstractShaper):
         command_item_list = [
             self._tc_obj.get_tc_command(TcSubCommand.FILTER),
             self._dev,
-            "protocol {:s}".format(self._tc_obj.protocol),
-            "parent {:s}:".format(self._tc_obj.qdisc_major_id_str),
-            "prio {:d}".format(self._get_filter_prio(is_exclude_filter=True)),
+            f"protocol {self._tc_obj.protocol:s}",
+            f"parent {self._tc_obj.qdisc_major_id_str:s}:",
+            f"prio {self._get_filter_prio(is_exclude_filter=True):d}",
             "u32",
         ]
 
@@ -191,7 +190,7 @@ class HtbShaper(AbstractShaper):
                 )
             )
 
-        command_item_list.append("flowid {:s}".format(self.__classid_wo_shaping))
+        command_item_list.append(f"flowid {self.__classid_wo_shaping:s}")
 
         return subprocrunner.SubprocessRunner(" ".join(command_item_list)).run()
 
@@ -226,7 +225,10 @@ class HtbShaper(AbstractShaper):
     def __get_unique_qdisc_minor_id(self):
         if not is_execute_tc_command(self._tc_obj.tc_command_output):
             return (
-                int(self._tc_obj.netem_param.calc_hash(self._tc_obj.make_srcdst_text())[-2:], 16)
+                int(
+                    self._tc_obj.netem_param.calc_hash(self._tc_obj.make_srcdst_text())[-2:],
+                    16,
+                )
                 + 1
             )
 
@@ -237,7 +239,8 @@ class HtbShaper(AbstractShaper):
 
         exist_class_item_list = re.findall(
             "class {algorithm:s} {qdisc_major_id:s}:[0-9]+".format(
-                algorithm=ShapingAlgorithm.HTB, qdisc_major_id=self._tc_obj.qdisc_major_id_str
+                algorithm=ShapingAlgorithm.HTB,
+                qdisc_major_id=self._tc_obj.qdisc_major_id_str,
             ),
             run_tc_show(TcSubCommand.CLASS, self._tc_device, self._tc_obj.tc_command_output),
             re.MULTILINE,
@@ -250,10 +253,8 @@ class HtbShaper(AbstractShaper):
             except typepy.TypeConversionError:
                 continue
 
-        logger.debug("existing class list with {:s}: {}".format(self._dev, exist_class_item_list))
-        logger.debug(
-            "existing minor classid list with {:s}: {}".format(self._dev, exist_class_minor_id_list)
-        )
+        logger.debug(f"existing class list with {self._dev:s}: {exist_class_item_list}")
+        logger.debug(f"existing minor classid list with {self._dev:s}: {exist_class_minor_id_list}")
 
         next_minor_id = self.__DEFAULT_CLASS_MINOR_ID
         while True:
@@ -265,13 +266,16 @@ class HtbShaper(AbstractShaper):
         return next_minor_id
 
     def __extract_exist_netem_major_ids(self) -> List[int]:
+        tcshow_out = run_tc_show(
+            TcSubCommand.QDISC, self._tc_device, self._tc_obj.tc_command_output
+        )
         exist_netem_items = re.findall(
             "qdisc [a-z]+ [a-z0-9]+",
-            run_tc_show(TcSubCommand.QDISC, self._tc_device, self._tc_obj.tc_command_output),
+            tcshow_out,
             re.MULTILINE,
         )
 
-        logger.debug("existing netem list with {:s}: {}".format(self._dev, exist_netem_items))
+        logger.debug(f"existing netem list with {self._dev:s}: {exist_netem_items}")
 
         exist_netem_major_id_list = []
         for netem_item in exist_netem_items:
@@ -282,9 +286,7 @@ class HtbShaper(AbstractShaper):
     def __get_unique_netem_major_id(self):
         exist_netem_major_ids = self.__extract_exist_netem_major_ids()
 
-        logger.debug(
-            "existing netem major id list with {:s}: {}".format(self._dev, exist_netem_major_ids)
-        )
+        logger.debug(f"existing netem major id list with {self._dev:s}: {exist_netem_major_ids}")
 
         next_netem_major_id = self._tc_obj.netem_param.calc_device_qdisc_major_id()
         while True:
@@ -297,8 +299,8 @@ class HtbShaper(AbstractShaper):
 
     def __add_default_class(self):
         base_command = self._tc_obj.get_tc_command(TcSubCommand.CLASS)
-        parent = "{:s}:".format(self._tc_obj.qdisc_major_id_str)
-        classid = "{:s}:{:d}".format(self._tc_obj.qdisc_major_id_str, self.__DEFAULT_CLASS_MINOR_ID)
+        parent = f"{self._tc_obj.qdisc_major_id_str:s}:"
+        classid = f"{self._tc_obj.qdisc_major_id_str:s}:{self.__DEFAULT_CLASS_MINOR_ID:d}"
         self.__classid_wo_shaping = classid
 
         if self._tc_obj.is_add_shaping_rule:
@@ -321,10 +323,10 @@ class HtbShaper(AbstractShaper):
                 [
                     base_command,
                     self._dev,
-                    "parent {:s}".format(parent),
-                    "classid {:s}".format(classid),
+                    f"parent {parent:s}",
+                    f"classid {classid:s}",
                     self.algorithm_name,
-                    "rate {}kbit".format(get_upper_limit_rate(self._tc_device).kilo_bps),
+                    f"rate {get_upper_limit_rate(self._tc_device).kilo_bps}kbit",
                 ]
             ),
             ignore_error_msg_regexp=self._tc_obj.REGEXP_FILE_EXISTS,

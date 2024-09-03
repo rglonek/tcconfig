@@ -4,7 +4,6 @@
 .. codeauthor:: Tsuyoshi Hombashi <tsuyoshi.hombashi@gmail.com>
 """
 
-
 import errno
 import sys
 
@@ -42,7 +41,7 @@ def parse_option():
     group.add_argument(
         "--id",
         dest="filter_id",
-        help="""delete a shaping rule which has a specific id. you can get an id (filter_id)
+        help="""delete a shaping rule that has a specific id. you can get an id (filter_id)
         by tcshow command output.
         e.g. "filter_id": "800::801"
         """,
@@ -101,7 +100,7 @@ class TcDelMain(Main):
                 break
             else:
                 logger.error(
-                    "shaping rule not found associated with the id ({}).".format(options.filter_id)
+                    f"shaping rule not found associated with the id ({options.filter_id})."
                 )
                 sys.exit(1)
         else:

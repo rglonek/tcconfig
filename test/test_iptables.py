@@ -2,7 +2,6 @@
 .. codeauthor:: Tsuyoshi Hombashi <tsuyoshi.hombashi@gmail.com>
 """
 
-
 import random
 
 import pytest
@@ -93,7 +92,15 @@ class Test_IptablesMangleMark_to_append_command:
     _CMD_PREFIX = get_iptables_base_command() + " -A {:s} -t mangle -j MARK"
 
     @pytest.mark.parametrize(
-        ["mark_id", "source", "destination", "chain", "protocol", "line_number", "expected"],
+        [
+            "mark_id",
+            "source",
+            "destination",
+            "chain",
+            "protocol",
+            "line_number",
+            "expected",
+        ],
         [
             [
                 2,
@@ -172,7 +179,15 @@ class Test_IptablesMangleMark_to_append_command:
 
 class Test_IptablesMangleMark_to_delete_command:
     @pytest.mark.parametrize(
-        ["mark_id", "source", "destination", "chain", "protocol", "line_number", "expected"],
+        [
+            "mark_id",
+            "source",
+            "destination",
+            "chain",
+            "protocol",
+            "line_number",
+            "expected",
+        ],
         [
             [
                 2,
@@ -181,7 +196,7 @@ class Test_IptablesMangleMark_to_delete_command:
                 "PREROUTING",
                 "all",
                 1,
-                "{:s} -t mangle -D PREROUTING 1".format(get_iptables_base_command()),
+                f"{get_iptables_base_command():s} -t mangle -D PREROUTING 1",
             ],
             [
                 20,
@@ -190,7 +205,7 @@ class Test_IptablesMangleMark_to_delete_command:
                 "OUTPUT",
                 "all",
                 2,
-                "{:s} -t mangle -D OUTPUT 2".format(get_iptables_base_command()),
+                f"{get_iptables_base_command():s} -t mangle -D OUTPUT 2",
             ],
         ],
     )
@@ -207,7 +222,15 @@ class Test_IptablesMangleMark_to_delete_command:
         assert mark.to_delete_command() == expected
 
     @pytest.mark.parametrize(
-        ["mark_id", "source", "destination", "chain", "protocol", "line_number", "expected"],
+        [
+            "mark_id",
+            "source",
+            "destination",
+            "chain",
+            "protocol",
+            "line_number",
+            "expected",
+        ],
         [[2, _DEF_SRC, _DEF_DST, "OUTPUT", "all", None, TypeError]],
     )
     def test_exception(self, mark_id, source, destination, chain, protocol, line_number, expected):
@@ -283,7 +306,7 @@ class Test_IptablesMangleController_parse:
             assert iptables_ctrl_ipv4.add(mangle_mark) == 0
 
         for lhs_mangle, rhs_mangle in zip(iptables_ctrl_ipv4.parse(), reverse_mangle_mark_list):
-            print("lhs: {}".format(lhs_mangle))
-            print("rhs: {}".format(rhs_mangle))
+            print(f"lhs: {lhs_mangle}")
+            print(f"rhs: {rhs_mangle}")
 
             assert lhs_mangle == rhs_mangle

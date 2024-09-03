@@ -8,7 +8,7 @@ import setuptools
 
 
 MODULE_NAME = "tcconfig"
-REPOSITORY_URL = "https://github.com/thombashi/{:s}".format(MODULE_NAME)
+REPOSITORY_URL = f"https://github.com/thombashi/{MODULE_NAME:s}"
 REQUIREMENT_DIR = "requirements"
 ENCODING = "utf8"
 
@@ -39,12 +39,14 @@ with open(os.path.join(REQUIREMENT_DIR, "requirements.txt")) as f:
 with open(os.path.join(REQUIREMENT_DIR, "test_requirements.txt")) as f:
     tests_requires = [line.strip() for line in f if line.strip()]
 
-build_exe_requires = ["pyinstaller>=4.7"]
+with open(os.path.join(REQUIREMENT_DIR, "docs_requirements.txt")) as f:
+    docs_requires = [line.strip() for line in f if line.strip()]
+
+build_exe_requires = ["pyinstaller>=4.7,<7"]
 color_requires = ["Pygments>=2.2.0,<3"]
 
 setuptools.setup(
     name=MODULE_NAME,
-    version=pkg_info["__version__"],
     url=REPOSITORY_URL,
     author=pkg_info["__author__"],
     author_email=pkg_info["__email__"],
@@ -56,17 +58,18 @@ setuptools.setup(
     include_package_data=True,
     packages=setuptools.find_packages(exclude=["test*"]),
     project_urls={
-        "Documentation": "https://{:s}.rtfd.io/".format(MODULE_NAME),
+        "Changelog": f"{REPOSITORY_URL:s}/blob/master/CHANGELOG.md",
+        "Documentation": f"https://{MODULE_NAME:s}.rtfd.io/",
         "Source": REPOSITORY_URL,
-        "Tracker": "{:s}/issues".format(REPOSITORY_URL),
-        "Changes": "{:s}/releases".format(REPOSITORY_URL),
+        "Tracker": f"{REPOSITORY_URL:s}/issues",
     },
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     install_requires=install_requires,
     extras_require={
         "all": color_requires,
         "buildexe": build_exe_requires,
         "color": color_requires,
+        "docs": docs_requires,
         "test": tests_requires,
     },
     classifiers=[
@@ -80,11 +83,12 @@ setuptools.setup(
         "Operating System :: POSIX",
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Topic :: System :: Operating System Kernels :: Linux",
         "Topic :: System :: Networking",
         "Topic :: System :: Systems Administration",

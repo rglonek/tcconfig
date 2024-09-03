@@ -47,12 +47,12 @@ def find_bin_path(command):
         _bin_path_cache[command] = bin_path.abspath()
         return _bin_path_cache[command]
 
-    for sbin_path in ("/sbin/{:s}".format(command), "/usr/sbin/{:s}".format(command)):
+    for sbin_path in (f"/sbin/{command:s}", f"/usr/sbin/{command:s}"):
         if os.path.isfile(sbin_path):
             _bin_path_cache[command] = _to_regular_bin_path(sbin_path)
             return _bin_path_cache[command]
 
-    # return the command as it is when binary file not found
+    # return the command as it is when the binary file is not found
     return command
 
 
@@ -60,7 +60,7 @@ def check_command_installation(command):
     if find_bin_path(command):
         return
 
-    logger.error("command not found: {}".format(command))
+    logger.error(f"command not found: {command}")
     sys.exit(errno.ENOENT)
 
 
@@ -88,20 +88,20 @@ def validate_within_min_max(param_name, value, min_value, max_value, unit):
     if unit is None:
         unit = ""
     else:
-        unit = "[{:s}]".format(unit)
+        unit = f"[{unit:s}]"
 
     if value > max_value:
         raise ParameterError(
-            "'{:s}' is too high".format(param_name),
-            expected="<={:s}{:s}".format(DataProperty(max_value).to_str(), unit),
-            value="{:s}{:s}".format(DataProperty(value).to_str(), unit),
+            f"'{param_name:s}' is too high",
+            expected=f"<={DataProperty(max_value).to_str():s}{unit:s}",
+            value=f"{DataProperty(value).to_str():s}{unit:s}",
         )
 
     if value < min_value:
         raise ParameterError(
-            "'{:s}' is too low".format(param_name),
-            expected=">={:s}{:s}".format(DataProperty(min_value).to_str(), unit),
-            value="{:s}{:s}".format(DataProperty(value).to_str(), unit),
+            f"'{param_name:s}' is too low",
+            expected=f">={DataProperty(min_value).to_str():s}{unit:s}",
+            value=f"{DataProperty(value).to_str():s}{unit:s}",
         )
 
 
@@ -119,7 +119,11 @@ def normalize_tc_value(tc_obj):
 
 
 def run_command_helper(
-    command, ignore_error_msg_regexp, notice_msg, msg_log_level="WARNING", exception_class=None
+    command,
+    ignore_error_msg_regexp,
+    notice_msg,
+    msg_log_level="WARNING",
+    exception_class=None,
 ):
     runner = spr.SubprocessRunner(command, error_log_level=LogLevel.QUIET)
     runner.run()
@@ -128,13 +132,13 @@ def run_command_helper(
     if returncode == 0:
         return 0
 
-    if ignore_error_msg_regexp:
+    if ignore_error_msg_regexp and runner.stderr:
         if ignore_error_msg_regexp.search(runner.stderr) is None:
             error_msg = "\n".join(
                 [
                     "command execution failed",
-                    "  command={}".format(command),
-                    "  stderr={}".format(runner.stderr),
+                    f"  command={command}",
+                    f"  stderr={runner.stderr}",
                 ]
             )
 

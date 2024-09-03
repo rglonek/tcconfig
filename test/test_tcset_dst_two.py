@@ -2,7 +2,6 @@
 .. codeauthor:: Tsuyoshi Hombashi <tsuyoshi.hombashi@gmail.com>
 """
 
-
 import pingparsing
 import pytest
 import typepy
@@ -67,7 +66,12 @@ class Test_tcset_two_network:
     ):
         if device_option is None:
             pytest.skip("device option is null")
-        if any([typepy.is_null_string(dst_host_option), typepy.is_null_string(dst_host_ex_option)]):
+        if any(
+            [
+                typepy.is_null_string(dst_host_option),
+                typepy.is_null_string(dst_host_ex_option),
+            ]
+        ):
             pytest.skip("destination host is null")
 
         for tc_target in [device_option]:
@@ -78,9 +82,9 @@ class Test_tcset_two_network:
             command_list = [
                 Tc.Command.TCSET,
                 tc_target,
-                "--delay {:d}ms".format(delay),
-                "--dst-network {:s}".format(dst_host_ex_option),
-                "--shaping-algo {:s}".format(shaping_algo),
+                f"--delay {delay:d}ms",
+                f"--dst-network {dst_host_ex_option:s}",
+                f"--shaping-algo {shaping_algo:s}",
             ]
             assert SubprocessRunner(" ".join(command_list)).run() == 0
 

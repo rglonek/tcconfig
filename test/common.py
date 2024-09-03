@@ -2,7 +2,6 @@
 .. codeauthor:: Tsuyoshi Hombashi <tsuyoshi.hombashi@gmail.com>
 """
 
-
 import json
 import sys
 from collections import OrderedDict
@@ -19,20 +18,20 @@ ASSERT_MARGIN = 0.5
 def print_test_result(expected, actual, error=None):
     if isinstance(expected, (dict, OrderedDict)):
         expected = json.dumps(expected, indent=4)
-    print("[expected]\n{}\n".format(expected))
+    print(f"[expected]\n{expected}\n")
 
     if isinstance(actual, (dict, OrderedDict)):
         actual = json.dumps(actual, indent=4)
-    print("[actual]\n{}\n".format(actual))
+    print(f"[actual]\n{actual}\n")
 
     if error:
         print(error, file=sys.stderr)
 
 
-def is_invalid_param(rate, delay, packet_loss, packet_duplicate, corrupt, reordering):
-    param_values = [packet_loss, packet_duplicate, corrupt, reordering]
+def is_invalid_param(rate, delay, packet_loss, packet_duplicate, corrupt, reordering, packet_limit):
+    param_values = [packet_loss, packet_duplicate, corrupt, reordering, packet_limit]
 
-    print("rate={}, params={}".format(rate, param_values))
+    print(f"rate={rate}, params={param_values}")
 
     is_invalid = all(
         [not RealNumber(param_value).is_type() or param_value <= 0 for param_value in param_values]
@@ -40,7 +39,7 @@ def is_invalid_param(rate, delay, packet_loss, packet_duplicate, corrupt, reorde
     )
 
     try:
-        hr.BitPerSecond(rate).bps
+        hr.BitsPerSecond(rate).bps
     except (TypeError, ValueError):
         pass
     else:
@@ -53,7 +52,7 @@ def runner_helper(command):
     proc_runner = SubprocessRunner(command)
     proc_runner.run()
 
-    print("{}\n{}\n".format(proc_runner.command_str, proc_runner.stderr), file=sys.stderr)
+    print(f"{proc_runner.command_str}\n{proc_runner.stderr}\n", file=sys.stderr)
 
     assert proc_runner.returncode == 0
 

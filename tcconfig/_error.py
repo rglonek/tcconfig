@@ -2,16 +2,15 @@
 .. codeauthor:: Tsuyoshi Hombashi <tsuyoshi.hombashi@gmail.com>
 """
 
-
 import abc
 
 from pyroute2 import IPRoute
 
 
 class TargetNotFoundError(Exception):
-    @abc.abstractproperty
-    def _target_type(self):
-        return None
+    @property
+    @abc.abstractmethod
+    def _target_type(self): ...
 
     def __init__(self, *args, **kwargs):
         self._target = kwargs.pop("target", None)
@@ -22,7 +21,7 @@ class TargetNotFoundError(Exception):
         item_list = [Exception.__str__(self, *args, **kwargs)]
 
         if self._target:
-            item_list.append("{} not found: {}".format(self._target_type, self._target))
+            item_list.append(f"{self._target_type} not found: {self._target}")
 
         return " ".join(item_list).strip()
 

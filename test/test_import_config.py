@@ -56,7 +56,7 @@ class Test_import_config:
 
         p = tmpdir.join("tcconfig.json")
         config = make_config(device_value)
-        print("[config]\n{}\n".format(config))
+        print(f"[config]\n{config}\n")
         p.write(config)
 
         for device_option in [device_value]:
@@ -85,7 +85,7 @@ class Test_import_config:
 
         p = tmpdir.join("tcconfig.json")
         config = make_config(device_value)
-        print("[config]\n{}\n".format(config))
+        print(f"[config]\n{config}\n")
         p.write(config)
 
         for device_option in [device_value]:
@@ -93,4 +93,5 @@ class Test_import_config:
                 [Tc.Command.TCSET, "--import-setting", str(p), "--tc-command"]
             )
             assert runner.run() == 0
+            assert runner.stdout
             assert len(runner.stdout.splitlines()) > 10

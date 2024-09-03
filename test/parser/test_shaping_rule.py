@@ -3,6 +3,7 @@ import json
 import pytest
 
 import tcconfig
+import tcconfig.parser.shaping_rule
 from tcconfig._const import TrafficDirection
 from tcconfig._netem_param import NetemParameter
 from tcconfig.traffic_control import TrafficControl, delete_all_rules
@@ -33,6 +34,7 @@ class Test_TcShapingRuleParser:
                 packet_duplicate_rate=0,
                 corruption_rate=0,
                 reordering_rate=0,
+                packet_limit_count=0,
             ),
             src_network="192.168.3.188",
             dst_port=5201,
@@ -50,6 +52,7 @@ class Test_TcShapingRuleParser:
                 packet_duplicate_rate=0,
                 corruption_rate=0,
                 reordering_rate=0,
+                packet_limit_count=0,
             ),
             dst_network="192.168.3.188",
         )

@@ -10,6 +10,9 @@ concurrency:
   group: ci-${{ github.workflow }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 env:
   BIN_NAME: tcconfig
   DIST_DIR_NAME: dist
@@ -17,27 +20,32 @@ env:
   SHA_TEXT_FILE: sha256_tcconfig.txt
 
 jobs:
-  build-and-release:
+  build-deb-package:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
 
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04]
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.8"
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            setup.py
+            **/*requirements.txt
+            tox.ini
 
       - name: Install dependencies
         run: |
-          sudo apt-get update -qq 
-          sudo apt-get install -qq -y --no-install-recommends fakeroot rename
+          sudo apt-get update -qq
+          sudo apt-get install -qq -y --no-install-recommends fakeroot
 
       - name: Build a deb package
         run: ./scripts/build_deb_package.sh
@@ -45,36 +53,104 @@ jobs:
       - name: Test installation from a deb package
         run: sudo dpkg -i ${{ env.DIST_DIR_NAME }}/${{ env.BIN_NAME }}_*.deb
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
-          name: binaries
+          name: binaries-${{ matrix.os }}
           path: ${{ env.DIST_DIR_NAME }}/${{ env.BIN_NAME }}_*.deb
           if-no-files-found: error
           retention-days: 1
 
-      - name: Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          files: ${{ env.DIST_DIR_NAME }}/${{ env.BIN_NAME }}_*
-
-  calc-hash:
-    needs: [build-and-release]
+  build-wheel-package:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v2
-
-      - uses: actions/download-artifact@v2
+      - uses: actions/checkout@v4
         with:
-          name: binaries
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            setup.py
+            **/*requirements.txt
+            tox.ini
+
+      - run: make setup-ci
+
+      - run: make build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheel
+          path: ${{ env.DIST_DIR_NAME }}/*
+
+  publish-package:
+    needs: [build-wheel-package, build-deb-package]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/p/tcconfig
+    permissions:
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheel
+          path: ${{ env.DIST_DIR_NAME }}
+
+      - name: Publish to PyPI
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+
+  calc-hash-and-sign:
+    needs: [publish-package]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      id-token: write
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: binaries-ubuntu-20.04
+          path: ${{ env.DIST_DIR_NAME }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: binaries-ubuntu-22.04
+          path: ${{ env.DIST_DIR_NAME }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: binaries-ubuntu-24.04
+          path: ${{ env.DIST_DIR_NAME }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheel
           path: ${{ env.DIST_DIR_NAME }}
 
       - name: Setup environment variables
         run: echo "TCCONFIG_VERSION=$(grep -Po "(?<=__version__ = \")\d+\.\d+\.\d+(?=\")" tcconfig/__version__.py)" >> $GITHUB_ENV
+
+      - name: Sign the dists with Sigstore
+        uses: sigstore/gh-action-sigstore-python@v3.0.0
+        with:
+          inputs: >-
+            ${{ env.DIST_DIR_NAME }}/*.tar.gz
+            ${{ env.DIST_DIR_NAME }}/*.whl
+            ${{ env.DIST_DIR_NAME }}/${{ env.BIN_NAME }}_*.deb
 
       - name: Calculate checksums of binary assets
         run: |
@@ -90,16 +166,33 @@ jobs:
           cd "$DIST_DIR_NAME"
           sha256sum ${BIN_NAME}_* > "../${SHA_DIR}/${SHA_TEXT_FILE}"
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: shasum
           path: ${{ env.SHA_DIR }}
           if-no-files-found: error
           retention-days: 1
 
-      - name: Release
+      - name: List files
+        run: |
+          set -x
+
+          ls -l ${{ env.DIST_DIR_NAME }}/*
+          sleep 2  # wait for ls to finish
+          ls -l ${{ env.SHA_DIR }}/${{ env.SHA_TEXT_FILE }}
+
+      - name: Release packages
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          generate_release_notes: true
+          files: ${{ env.DIST_DIR_NAME }}/*
+
+      - name: Release checksums
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

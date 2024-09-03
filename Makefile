@@ -1,55 +1,62 @@
-AUTHOR := thombashi
-PACKAGE := tcconfig
+BIN_DIR := $(shell pwd)/bin
 DOCS_DIR := docs
 DOCS_BUILD_DIR := $(DOCS_DIR)/_build
-BUILD_WORK_DIR := _work
-PKG_BUILD_DIR := $(BUILD_WORK_DIR)/$(PACKAGE)
-PYTHON := python3
 
+PYTHON := python3
+BIN_CHANGELOG_FROM_RELEASE := $(BIN_DIR)/changelog-from-release
+
+
+$(BIN_CHANGELOG_FROM_RELEASE):
+	GOBIN=$(BIN_DIR) go install github.com/rhysd/changelog-from-release/v3@latest
 
 .PHONY: build
 build: clean
-	@tox -e buildwhl
+	$(PYTHON) -m tox -e buildwhl
 	ls -lh dist/*
 
-.PHONY: build-remote
-build-remote: clean
-	@mkdir -p $(BUILD_WORK_DIR)
-	@cd $(BUILD_WORK_DIR) && \
-		git clone https://github.com/$(AUTHOR)/$(PACKAGE).git --depth 1 && \
-		cd $(PACKAGE) && \
-		tox -e buildwhl
-	ls -lh $(PKG_BUILD_DIR)/dist/*
+.PHONY: changelog
+changelog: $(BIN_CHANGELOG_FROM_RELEASE)
+	$(BIN_CHANGELOG_FROM_RELEASE) > CHANGELOG.md
+	cp -a CHANGELOG.md docs/pages/CHANGELOG.md
 
 .PHONY: check
 check:
-	@tox -e lint
+	$(PYTHON) -m tox -e lint
 
 .PHONY: clean
 clean:
-	@rm -rf $(BUILD_WORK_DIR)
-	@tox -e clean
+	rm -rf $(BIN_DIR)
+	$(PYTHON) -m tox -e clean
 
 .PHONY: docs
 docs:
-	@tox -e docs
+	$(PYTHON) -m tox -e docs
 
 .PHONY: fmt
 fmt:
-	@tox -e fmt
+	$(PYTHON) -m tox -e fmt
 
 .PHONY: readme
 readme:
-	@tox -e readme
+	$(PYTHON) -m tox -e readme
 
 .PHONY: release
 release:
-	@cd $(PKG_BUILD_DIR) && $(PYTHON) setup.py release --sign
+	$(PYTHON) -m tox -e release
 
-.PHONY: setup
-setup:
-	@$(PYTHON) -m pip install -q --disable-pip-version-check --upgrade -e .[test] releasecmd tox
-	@$(PYTHON) -m pip check
+.PHONY: setup-ci
+setup-ci:
+	$(PYTHON) -m pip install -q --disable-pip-version-check --upgrade pip
+	$(PYTHON) -m pip install -q --disable-pip-version-check --upgrade tox
+
+.PHONY: setup-dev
+setup-dev: setup-ci
+	$(PYTHON) -m pip install -q --disable-pip-version-check --upgrade -e .[test]
+	$(PYTHON) -m pip check
+
+.PHONY: test
+test:
+	$(PYTHON) -m tox -e py
 
 .PHONY: update-releases-info
 update-releases-info:
