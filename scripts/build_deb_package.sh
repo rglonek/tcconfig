@@ -16,7 +16,7 @@ mkdir -p "${DIST_DIR_NAME}/DEBIAN"
 
 
 # setup
-$PYTHON -m pip install --upgrade --break-system-packages "pip>=21.1"
+$PYTHON -m pip install --upgrade "pip>=21.1" || echo "continue"
 $PYTHON -m pip install --upgrade --break-system-packages .[buildexe,color]
 
 PKG_VERSION=$($PYTHON -c "import ${PKG_NAME}; print(${PKG_NAME}.__version__)")
